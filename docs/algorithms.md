@@ -144,9 +144,11 @@ Records administrative mutations (e.g., toggling food item availability or adjus
 
 ---
 
-## 7. Baseline Counter Allocation Strategy
+## 7. Counter Allocation Strategy & Predictive Scheduling
 
-The scheduling engine assigns each new order to an available counter using the **Minimum Predicted Workload** heuristic:
+The system implements two distinct scheduling strategies, cleanly decoupled via the `IPrepTimePredictor` interface:
+
+### A. Phase 1 Static Baseline Heuristic
 1. Traverse all registered counters in `FixedArray`.
 2. Filter for counters where `isAvailable == true`.
 3. Compute total pending workload:
@@ -155,4 +157,19 @@ The scheduling engine assigns each new order to an available counter using the *
    $$C^* = \arg\min_{C \text{ available}} \left( \text{Workload}(C), \, \text{ID}(C) \right)$$
 5. If workloads are tied, the counter with the lower numeric ID is selected deterministically.
 
-This baseline provides a transparent benchmark that can be directly evaluated against AI/ML predictive scheduling in Phase 2.
+### B. Phase 2 Machine-Learning-Driven Predictive Scheduler
+Instead of relying on fixed menu preparation sums, the scheduler queries the trained `RandomForestPredictor` for each available counter $C$:
+1. **Contextual Feature Extraction**:
+   Constructs the feature vector $\mathbf{x}(O, C) = [ \text{Category}(O), \text{Quantity}(O), \text{Complexity}(O), \text{Hour}, \text{Workload}(C) ]$.
+2. **Model Inference**:
+   $$T_{\text{pred}}(O, C) = \text{RandomForestPredictor}.\text{predict}(\mathbf{x}(O, C))$$
+   The prediction is validated for sanity ($T_{\text{pred}} \ge 1.0$, non-NaN). If inference fails or the model is missing, the static baseline sum is used as a safe fallback.
+3. **Projected Completion Time**:
+   $$\text{ProjectedCompletion}(C) = \text{Workload}(C) + T_{\text{pred}}(O, C)$$
+4. **Optimal Counter Selection**:
+   $$C^* = \arg\min_{C \text{ available}} \left( \text{ProjectedCompletion}(C), \, \text{ID}(C) \right)$$
+5. **FIFO Queue & Workload Updates**:
+   - Order preparation time is updated to $\text{round}(T_{\text{pred}}(O, C^*))$.
+   - Order is enqueued to $C^*$'s custom FIFO queue.
+   - $C^*$'s workload is incremented by this predicted duration.
+   - When the order is completed or cancelled, its preparation duration is cleanly deducted from $C^*$'s workload. FIFO queue ordering of all remaining orders is strictly preserved.

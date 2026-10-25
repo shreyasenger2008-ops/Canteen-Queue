@@ -1,6 +1,6 @@
-# Testing Report: DSA Foundation Test Suite
+# Testing Report: DSA & Machine Learning Integration Test Suite
 
-This report documents the verification results for the **AI-Based College Canteen Queue Optimization System** (Phase 1). All 33 unit and integration tests were compiled and executed against the C++ test suite binary.
+This report documents the verification results for the **AI-Based College Canteen Queue Optimization System** (Phase 2: ML Integration). All 40 unit and integration tests were compiled and executed against the C++ test suite binary.
 
 ---
 
@@ -12,8 +12,8 @@ This report documents the verification results for the **AI-Based College Cantee
 - **Build System**: CMake 4.3.1-msvc1 / MSBuild 18.10.1
 - **Platform**: Windows 11 (x64)
 - **Binary Executed**: `build\Debug\canteen_tests.exe`
-- **Total Tests Executed**: 33
-- **Passed**: 33
+- **Total Tests Executed**: 40
+- **Passed**: 40
 - **Failed**: 0
 - **Pass Rate**: 100.0%
 
@@ -96,10 +96,24 @@ This report documents the verification results for the **AI-Based College Cantee
 
 | # | Test Identifier | Input / Scenario | Expected Outcome | Actual Result | Status |
 |---|---|---|---|---|---|
-| 30 | `Integration_OrderPlacementAndAllocation` | Place 2 orders when counters are initially empty. | Order 1 assigned to Counter 1 (tie-breaker); Order 2 assigned to Counter 2 (workload 0 < 7). | Optimal allocation heuristic verified. | **PASS** |
+| 30 | `Integration_OrderPlacementAndAllocation` | Place 2 orders when counters are initially empty under ML scheduling. | Order 1 assigned to Counter 1 (tie-breaker); Order 2 assigned to Counter 2 (workload 0 < 7). | Optimal allocation heuristic verified. | **PASS** |
 | 31 | `Integration_ValidAndInvalidStatusTransitions` | Step order through `QUEUED -> PREPARING -> READY -> COLLECTED`; attempt invalid transitions. | Valid transitions succeed; invalid transitions throw `std::invalid_argument`. | State machine validated. | **PASS** |
-| 32 | `Integration_CompleteOrderWorkflowAndWorkloadUpdate` | Place order (7m), start preparing, complete and collect. | Workload increases to 7m, then decreases back to 0m; counter served count increments to 1. | Workload tracking verified. | **PASS** |
-| 33 | `Integration_CancellationReclaimsWorkloadAndClearsQueue` | Place 2 orders (7m + 8m = 15m); cancel first order. | Workload reclaimed to 8m; canceled order removed from queue; remaining order undisturbed. | Queue sanitized and workload adjusted. | **PASS** |
+| 32 | `Integration_CompleteOrderWorkflowAndWorkloadUpdate` | Place order (7m), start preparing, complete and collect (baseline mode). | Workload increases to 7m, then decreases back to 0m; counter served count increments to 1. | Workload tracking verified. | **PASS** |
+| 33 | `Integration_CancellationReclaimsWorkloadAndClearsQueue` | Place 2 orders (7m + 8m = 15m); cancel first order (baseline mode). | Workload reclaimed to 8m; canceled order removed from queue; remaining order undisturbed. | Queue sanitized and workload adjusted. | **PASS** |
+
+---
+
+### Category 8: Machine Learning Model Tests (`tests/test_ml.cpp`)
+
+| # | Test Identifier | Input / Scenario | Expected Outcome | Actual Result | Status |
+|---|---|---|---|---|---|
+| 34 | `ML_ModelLoadSuccess` | Instantiate `RandomForestPredictor`. | Loads 20 decision trees from `ml/model.json`; `isLoaded()` is true. | 20 trees loaded successfully. | **PASS** |
+| 35 | `ML_FinitePositivePredictions` | Generate feature vectors across all 5 culinary categories. | Predictions are non-NaN, non-infinite, and positive ($> 0.0$ and $< 45.0$). | All outputs finite and positive. | **PASS** |
+| 36 | `ML_CompareWithPythonHeldOutPredictions` | Compare C++ predictions against Python predictions on 5 held-out test points. | Difference $|y_{\text{cpp}} - y_{\text{py}}| < 10^{-4}$ (agreement within 0.006s). | Max difference was $< 3.0 \times 10^{-7}$. | **PASS** |
+| 37 | `ML_SafeInputValidationAndErrorHandling` | Pass incomplete features ($< 5$), `NaN`, or `Infinity`. | Throws `std::invalid_argument`; prevents model corruption. | Exceptions thrown safely. | **PASS** |
+| 38 | `ML_MissingModelFileFallbackSafety` | Instantiate predictor pointing to nonexistent JSON file path. | Automatically falls back to embedded compiled tree; does not crash; produces valid prediction. | Fallback initialized and functional. | **PASS** |
+| 39 | `ML_PredictionsReachSchedulingEngine` | Place an order through `CanteenSystem` with ML predictor active. | Order prep time set by ML model; counter workload incremented by predicted time. | Dynamic ML allocation verified. | **PASS** |
+| 40 | `ML_PreservesFIFOOrderingUnderPredictedAllocations` | Enqueue 3 orders at Counter 1; complete front orders sequentially. | Dequeued orders match arrival sequence (Order 1, Order 2, Order 3); workloads return to 0. | Strict FIFO queue preserved. | **PASS** |
 
 ---
 
@@ -138,21 +152,32 @@ This report documents the verification results for the **AI-Based College Cantee
   [PASS] Sorting_MergeSortEmptyAndSingleElement
   [PASS] Sorting_MergeSortFoodItemsByPrepTimeAndDuplicates
   [PASS] Sorting_MergeSortOrdersByPrepTime
-[SUCCESS] Order #101 placed successfully for Student One (S101). Assigned to Counter #1 (Est. Prep: 7 mins).
-[SUCCESS] Order #102 placed successfully for Student Two (S102). Assigned to Counter #2 (Est. Prep: 5 mins).
+[SUCCESS] Order #101 placed successfully for Student One (S101). Assigned to Counter #1 (Predicted Prep: 7 mins via ML Model).
+[SUCCESS] Order #102 placed successfully for Student Two (S102). Assigned to Counter #2 (Predicted Prep: 5 mins via ML Model).
   [PASS] Integration_OrderPlacementAndAllocation
   [PASS] Integration_ValidAndInvalidStatusTransitions
-[SUCCESS] Order #101 placed successfully for User1 (S1). Assigned to Counter #1 (Est. Prep: 7 mins).
+[SUCCESS] Order #101 placed successfully for User1 (S1). Assigned to Counter #1 (Predicted Prep: 7 mins via Base Sum).
 [STATUS] Front order at Counter #1 is now PREPARING.
 [SUCCESS] Order #101 marked as READY & COLLECTED from Counter #1 by User1.
   [PASS] Integration_CompleteOrderWorkflowAndWorkloadUpdate
-[SUCCESS] Order #101 placed successfully for User1 (S1). Assigned to Counter #1 (Est. Prep: 7 mins).
-[SUCCESS] Order #102 placed successfully for User2 (S2). Assigned to Counter #1 (Est. Prep: 8 mins).
+[SUCCESS] Order #101 placed successfully for User1 (S1). Assigned to Counter #1 (Predicted Prep: 7 mins via Base Sum).
+[SUCCESS] Order #102 placed successfully for User2 (S2). Assigned to Counter #1 (Predicted Prep: 8 mins via Base Sum).
 [SUCCESS] Order #101 has been CANCELLED and removed from queue.
 [ERROR] Order #101 was not found in any pending queue.
   [PASS] Integration_CancellationReclaimsWorkloadAndClearsQueue
+  [PASS] ML_ModelLoadSuccess
+  [PASS] ML_FinitePositivePredictions
+  [PASS] ML_CompareWithPythonHeldOutPredictions
+  [PASS] ML_SafeInputValidationAndErrorHandling
+  [PASS] ML_MissingModelFileFallbackSafety
+[SUCCESS] Order #101 placed successfully for ML Test Student (STU99). Assigned to Counter #1 (Predicted Prep: 7 mins via ML Model).
+  [PASS] ML_PredictionsReachSchedulingEngine
+[SUCCESS] Order #101 placed successfully for Alice (STU_A). Assigned to Counter #1 (Predicted Prep: 7 mins via ML Model).
+[SUCCESS] Order #102 placed successfully for Bob (STU_B). Assigned to Counter #1 (Predicted Prep: 3 mins via ML Model).
+[SUCCESS] Order #103 placed successfully for Carol (STU_C). Assigned to Counter #1 (Predicted Prep: 1 mins via ML Model).
+  [PASS] ML_PreservesFIFOOrderingUnderPredictedAllocations
 ==============================================================================
-TEST SUMMARY: 33 PASSED, 0 FAILED (Total: 33)
+TEST SUMMARY: 40 PASSED, 0 FAILED (Total: 40)
 ALL TESTS PASSED SUCCESSFULLY!
 ==============================================================================
 ```

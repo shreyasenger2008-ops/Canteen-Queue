@@ -17,10 +17,11 @@ private:
     double price{0.0};
     int preparationTimeMinutes{0};
     bool isAvailable{true};
+    int complexity{2}; ///< Preparation complexity score (1: simple/premade to 5: elaborate)
 
 public:
     FoodItem() = default;
-    FoodItem(int id, std::string name, std::string category, double price, int prepTimeMinutes, bool available = true);
+    FoodItem(int id, std::string name, std::string category, double price, int prepTimeMinutes, bool available = true, int comp = 2);
 
     // Getters
     int getId() const { return id; }
@@ -29,6 +30,8 @@ public:
     double getPrice() const { return price; }
     int getPreparationTimeMinutes() const { return preparationTimeMinutes; }
     bool getIsAvailable() const { return isAvailable; }
+    int getComplexity() const { return complexity; }
+    int getCategoryCode() const;
 
     // Setters
     void setId(int newId) { id = newId; }
@@ -37,6 +40,7 @@ public:
     void setPrice(double newPrice) { price = newPrice; }
     void setPreparationTimeMinutes(int newPrepTime) { preparationTimeMinutes = newPrepTime; }
     void setIsAvailable(bool available) { isAvailable = available; }
+    void setComplexity(int comp) { complexity = comp; }
 
     // Display helper
     void display() const;

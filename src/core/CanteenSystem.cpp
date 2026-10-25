@@ -59,7 +59,8 @@ int CanteenSystem::placeOrder(const std::string& studentId, const std::string& s
     }
 
     int assignedCounterId = -1;
-    bool success = counterManager.enqueueOrder(newOrder, preferredCounterId, &assignedCounterId);
+    const ml::IPrepTimePredictor* activePredictor = (useMLPredictor && predictor.isLoaded()) ? &predictor : nullptr;
+    bool success = counterManager.enqueueOrder(newOrder, preferredCounterId, &assignedCounterId, activePredictor, timeOfDayHour);
     if (!success) {
         std::cout << "[ERROR] No available counter to accept Order #" << orderId << ".\n";
         return -1;
@@ -70,9 +71,25 @@ int CanteenSystem::placeOrder(const std::string& studentId, const std::string& s
 
     std::cout << "[SUCCESS] Order #" << orderId << " placed successfully for "
               << studentName << " (" << studentId << "). Assigned to Counter #"
-              << assignedCounterId << " (Est. Prep: " << newOrder.getTotalPreparationTimeMinutes() << " mins).\n";
+              << assignedCounterId << " (Predicted Prep: " << newOrder.getTotalPreparationTimeMinutes()
+              << " mins" << (activePredictor ? " via ML Model" : " via Base Sum") << ").\n";
 
     return orderId;
+}
+
+double CanteenSystem::predictOrderPrepTime(const Order& order, int counterId) const {
+    double workload = 0.0;
+    if (counterId != -1) {
+        const Counter* c = counterManager.getCounterById(counterId);
+        if (c != nullptr) {
+            workload = static_cast<double>(c->getCurrentWorkloadMinutes());
+        }
+    }
+    if (useMLPredictor && predictor.isLoaded()) {
+        auto feats = order.extractPredictionFeatures(timeOfDayHour, workload);
+        return predictor.predict(feats);
+    }
+    return static_cast<double>(order.getTotalPreparationTimeMinutes());
 }
 
 bool CanteenSystem::startPreparingOrder(int counterId) {
@@ -290,9 +307,11 @@ void CanteenSystem::runInteractiveCLI() {
         std::cout << "14. Admin: Undo Last Menu Change (Pop Action from Stack)\n";
         std::cout << "15. View Full Order History (Singly Linked List Traversal)\n";
         std::cout << "16. Run Full Automated Demonstration Simulation\n";
+        std::cout << "17. View ML Model Status & Test Feature Prediction\n";
+        std::cout << "18. Toggle ML Model vs Baseline Sum Mode (Current: " << (useMLPredictor ? "ML ACTIVE" : "BASELINE") << ")\n";
         std::cout << " 0. Exit\n";
         std::cout << "==============================================================================\n";
-        std::cout << "Enter your choice [0-16]: ";
+        std::cout << "Enter your choice [0-18]: ";
 
         if (!(std::cin >> choice)) {
             std::cin.clear();
@@ -444,11 +463,50 @@ void CanteenSystem::runInteractiveCLI() {
             case 16:
                 runDemonstrationSimulation();
                 break;
+            case 17: {
+                std::cout << "\n============================== ML MODEL STATUS ==============================\n";
+                std::cout << "Model Status     : " << (predictor.isLoaded() ? "LOADED & OPERATIONAL" : "FALLBACK") << "\n";
+                std::cout << "Model Source     : " << predictor.getModelName() << "\n";
+                std::cout << "Ensemble Trees   : " << predictor.getEstimatorCount() << "\n";
+                std::cout << "Time of Day      : " << timeOfDayHour << " hrs\n";
+                std::cout << "Scheduler Mode   : " << (useMLPredictor ? "ML RANDOM FOREST PREDICTOR" : "STATIC MENU BASELINE") << "\n";
+                std::cout << "------------------------------------------------------------------------------\n";
+                std::cout << "Test Custom Feature Vector:\n";
+                int cat, qty, comp;
+                double wl;
+                std::cout << "Enter Category (0: FastFood, 1: SouthIndian, 2: Meals, 3: Beverage, 4: Bakery): ";
+                std::cin >> cat;
+                std::cout << "Enter Quantity (1-5): ";
+                std::cin >> qty;
+                std::cout << "Enter Complexity (1-5): ";
+                std::cin >> comp;
+                std::cout << "Enter Counter Workload (minutes): ";
+                std::cin >> wl;
+
+                ml::OrderPredictionFeatures f;
+                f.foodCategory = cat;
+                f.orderQuantity = qty;
+                f.preparationComplexity = comp;
+                f.timeOfDayHour = timeOfDayHour;
+                f.currentKitchenWorkload = wl;
+
+                double pred = predictor.predict(f);
+                std::cout << "[ML INFERENCE RESULT]: Predicted Preparation Time = "
+                          << std::fixed << std::setprecision(2) << pred << " minutes\n";
+                std::cout << "==============================================================================\n";
+                break;
+            }
+            case 18: {
+                useMLPredictor = !useMLPredictor;
+                std::cout << "[CONFIG UPDATED]: Scheduler prediction mode changed to: "
+                          << (useMLPredictor ? "ML RANDOM FOREST PREDICTOR" : "STATIC MENU BASELINE") << "\n";
+                break;
+            }
             case 0:
                 std::cout << "Exiting College Canteen Queue Optimization System. Goodbye!\n";
                 break;
             default:
-                std::cout << "Invalid choice. Please select from 0 to 16.\n";
+                std::cout << "Invalid choice. Please select from 0 to 18.\n";
                 break;
         }
     }

@@ -37,13 +37,17 @@ const Counter* CounterManager::getCounterById(int id) const {
     return nullptr;
 }
 
-Counter* CounterManager::findBestCounterForOrder(const Order& /*order*/) {
+Counter* CounterManager::findBestCounterForOrder(const Order& order,
+                                                 const ml::IPrepTimePredictor* predictor,
+                                                 double timeOfDayHour,
+                                                 double* outPredictedPrepTime) {
     if (counters.isEmpty()) {
         return nullptr;
     }
 
     Counter* bestCounter = nullptr;
-    int minWorkload = std::numeric_limits<int>::max();
+    double minProjectedCompletion = std::numeric_limits<double>::max();
+    double bestPredictedPrep = static_cast<double>(order.getTotalPreparationTimeMinutes());
 
     // Traversal across fixed array
     for (size_t i = 0; i < counters.size(); ++i) {
@@ -54,38 +58,72 @@ Counter* CounterManager::findBestCounterForOrder(const Order& /*order*/) {
             continue;
         }
 
-        int candidateWorkload = candidate.getCurrentWorkloadMinutes();
+        double candidateWorkload = static_cast<double>(candidate.getCurrentWorkloadMinutes());
+        double candidatePrepTime = static_cast<double>(order.getTotalPreparationTimeMinutes());
+
+        // Use ML predictor if available and loaded
+        if (predictor != nullptr && predictor->isLoaded()) {
+            try {
+                auto feats = order.extractPredictionFeatures(timeOfDayHour, candidateWorkload);
+                candidatePrepTime = predictor->predict(feats);
+                // Validate prediction (must be finite and positive)
+                if (std::isnan(candidatePrepTime) || std::isinf(candidatePrepTime) || candidatePrepTime <= 0.0) {
+                    candidatePrepTime = static_cast<double>(order.getTotalPreparationTimeMinutes());
+                }
+            } catch (...) {
+                // Safe fallback to baseline sum
+                candidatePrepTime = static_cast<double>(order.getTotalPreparationTimeMinutes());
+            }
+        }
+
+        double projectedCompletion = candidateWorkload + candidatePrepTime;
 
         if (bestCounter == nullptr) {
             bestCounter = &candidate;
-            minWorkload = candidateWorkload;
-        } else if (candidateWorkload < minWorkload) {
+            minProjectedCompletion = projectedCompletion;
+            bestPredictedPrep = candidatePrepTime;
+        } else if (projectedCompletion < minProjectedCompletion) {
             bestCounter = &candidate;
-            minWorkload = candidateWorkload;
-        } else if (candidateWorkload == minWorkload) {
+            minProjectedCompletion = projectedCompletion;
+            bestPredictedPrep = candidatePrepTime;
+        } else if (std::abs(projectedCompletion - minProjectedCompletion) < 1e-6) {
             // Tie-break consistently using Counter ID
             if (candidate.getId() < bestCounter->getId()) {
                 bestCounter = &candidate;
-                minWorkload = candidateWorkload;
+                minProjectedCompletion = projectedCompletion;
+                bestPredictedPrep = candidatePrepTime;
             }
         }
     }
 
+    if (outPredictedPrepTime != nullptr) {
+        *outPredictedPrepTime = bestPredictedPrep;
+    }
     return bestCounter;
 }
 
-bool CounterManager::enqueueOrder(Order order, int preferredCounterId, int* assignedCounterIdOut) {
+bool CounterManager::enqueueOrder(Order order, int preferredCounterId, int* assignedCounterIdOut,
+                                  const ml::IPrepTimePredictor* predictor, double timeOfDayHour) {
     Counter* targetCounter = nullptr;
+    double predictedPrepTime = static_cast<double>(order.getTotalPreparationTimeMinutes());
 
     if (preferredCounterId != -1) {
         targetCounter = getCounterById(preferredCounterId);
         if (targetCounter != nullptr && !targetCounter->getIsAvailable()) {
             targetCounter = nullptr; // Target is offline, fall back to optimal
         }
+        if (targetCounter != nullptr && predictor != nullptr && predictor->isLoaded()) {
+            try {
+                auto feats = order.extractPredictionFeatures(timeOfDayHour, targetCounter->getCurrentWorkloadMinutes());
+                predictedPrepTime = predictor->predict(feats);
+            } catch (...) {
+                predictedPrepTime = static_cast<double>(order.getTotalPreparationTimeMinutes());
+            }
+        }
     }
 
     if (targetCounter == nullptr) {
-        targetCounter = findBestCounterForOrder(order);
+        targetCounter = findBestCounterForOrder(order, predictor, timeOfDayHour, &predictedPrepTime);
     }
 
     if (targetCounter == nullptr) {
@@ -95,6 +133,10 @@ bool CounterManager::enqueueOrder(Order order, int preferredCounterId, int* assi
     if (assignedCounterIdOut != nullptr) {
         *assignedCounterIdOut = targetCounter->getId();
     }
+
+    // Update order with the validated ML prediction
+    int roundedPrepMins = std::max(1, static_cast<int>(std::round(predictedPrepTime)));
+    order.setTotalPreparationTimeMinutes(roundedPrepMins);
 
     targetCounter->enqueueOrder(std::move(order));
     return true;

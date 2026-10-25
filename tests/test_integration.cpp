@@ -55,6 +55,7 @@ TEST_CASE(Integration_ValidAndInvalidStatusTransitions) {
 
 TEST_CASE(Integration_CompleteOrderWorkflowAndWorkloadUpdate) {
     CanteenSystem system;
+    system.setUseMLPredictor(false); // Test deterministic baseline workload accounting
     Counter* c1 = system.getCounterManager().getCounterById(1);
     ASSERT_TRUE(c1 != nullptr);
     int initialWorkload = c1->getCurrentWorkloadMinutes();
@@ -83,6 +84,7 @@ TEST_CASE(Integration_CompleteOrderWorkflowAndWorkloadUpdate) {
 
 TEST_CASE(Integration_CancellationReclaimsWorkloadAndClearsQueue) {
     CanteenSystem system;
+    system.setUseMLPredictor(false); // Test deterministic baseline workload accounting
     Counter* c1 = system.getCounterManager().getCounterById(1);
     int o1 = system.placeOrder("S1", "User1", {{101, 1}}, 1); // 7 mins
     int o2 = system.placeOrder("S2", "User2", {{102, 1}}, 1); // 8 mins

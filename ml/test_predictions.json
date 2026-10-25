@@ -1,0 +1,479 @@
+{
+  "test_cases": [
+    {
+      "sample_index": 0,
+      "features": [
+        3.0,
+        2.0,
+        1.0,
+        19.17,
+        0.63
+      ],
+      "feature_dict": {
+        "food_category": 3.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 19.17,
+        "current_kitchen_workload": 0.63
+      },
+      "actual_target": 3.67,
+      "python_prediction": 3.832597
+    },
+    {
+      "sample_index": 20,
+      "features": [
+        0.0,
+        1.0,
+        3.0,
+        8.74,
+        10.73
+      ],
+      "feature_dict": {
+        "food_category": 0.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 8.74,
+        "current_kitchen_workload": 10.73
+      },
+      "actual_target": 9.89,
+      "python_prediction": 10.019401
+    },
+    {
+      "sample_index": 41,
+      "features": [
+        0.0,
+        2.0,
+        3.0,
+        12.94,
+        9.5
+      ],
+      "feature_dict": {
+        "food_category": 0.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 12.94,
+        "current_kitchen_workload": 9.5
+      },
+      "actual_target": 12.34,
+      "python_prediction": 12.011613
+    },
+    {
+      "sample_index": 62,
+      "features": [
+        2.0,
+        5.0,
+        4.0,
+        10.8,
+        3.45
+      ],
+      "feature_dict": {
+        "food_category": 2.0,
+        "order_quantity": 5.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 10.8,
+        "current_kitchen_workload": 3.45
+      },
+      "actual_target": 26.0,
+      "python_prediction": 25.135599
+    },
+    {
+      "sample_index": 83,
+      "features": [
+        1.0,
+        1.0,
+        3.0,
+        10.0,
+        0.98
+      ],
+      "feature_dict": {
+        "food_category": 1.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 10.0,
+        "current_kitchen_workload": 0.98
+      },
+      "actual_target": 7.35,
+      "python_prediction": 7.531225
+    },
+    {
+      "sample_index": 103,
+      "features": [
+        0.0,
+        1.0,
+        3.0,
+        17.62,
+        7.13
+      ],
+      "feature_dict": {
+        "food_category": 0.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 17.62,
+        "current_kitchen_workload": 7.13
+      },
+      "actual_target": 9.65,
+      "python_prediction": 10.019401
+    },
+    {
+      "sample_index": 124,
+      "features": [
+        4.0,
+        2.0,
+        1.0,
+        16.94,
+        0.81
+      ],
+      "feature_dict": {
+        "food_category": 4.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 16.94,
+        "current_kitchen_workload": 0.81
+      },
+      "actual_target": 2.62,
+      "python_prediction": 3.687376
+    },
+    {
+      "sample_index": 145,
+      "features": [
+        4.0,
+        4.0,
+        1.0,
+        18.17,
+        17.84
+      ],
+      "feature_dict": {
+        "food_category": 4.0,
+        "order_quantity": 4.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 18.17,
+        "current_kitchen_workload": 17.84
+      },
+      "actual_target": 7.73,
+      "python_prediction": 8.021361
+    },
+    {
+      "sample_index": 166,
+      "features": [
+        1.0,
+        2.0,
+        4.0,
+        16.92,
+        8.0
+      ],
+      "feature_dict": {
+        "food_category": 1.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 16.92,
+        "current_kitchen_workload": 8.0
+      },
+      "actual_target": 11.09,
+      "python_prediction": 11.669751
+    },
+    {
+      "sample_index": 187,
+      "features": [
+        1.0,
+        2.0,
+        3.0,
+        12.49,
+        24.25
+      ],
+      "feature_dict": {
+        "food_category": 1.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 12.49,
+        "current_kitchen_workload": 24.25
+      },
+      "actual_target": 13.61,
+      "python_prediction": 13.533985
+    },
+    {
+      "sample_index": 207,
+      "features": [
+        0.0,
+        2.0,
+        3.0,
+        12.13,
+        11.45
+      ],
+      "feature_dict": {
+        "food_category": 0.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 12.13,
+        "current_kitchen_workload": 11.45
+      },
+      "actual_target": 12.57,
+      "python_prediction": 12.549431
+    },
+    {
+      "sample_index": 228,
+      "features": [
+        2.0,
+        5.0,
+        4.0,
+        8.01,
+        4.23
+      ],
+      "feature_dict": {
+        "food_category": 2.0,
+        "order_quantity": 5.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 8.01,
+        "current_kitchen_workload": 4.23
+      },
+      "actual_target": 25.56,
+      "python_prediction": 25.30964
+    },
+    {
+      "sample_index": 249,
+      "features": [
+        4.0,
+        1.0,
+        1.0,
+        10.04,
+        2.98
+      ],
+      "feature_dict": {
+        "food_category": 4.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 10.04,
+        "current_kitchen_workload": 2.98
+      },
+      "actual_target": 2.86,
+      "python_prediction": 2.289746
+    },
+    {
+      "sample_index": 270,
+      "features": [
+        1.0,
+        1.0,
+        2.0,
+        11.99,
+        2.85
+      ],
+      "feature_dict": {
+        "food_category": 1.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 2.0,
+        "time_of_day_hour": 11.99,
+        "current_kitchen_workload": 2.85
+      },
+      "actual_target": 6.9,
+      "python_prediction": 7.531225
+    },
+    {
+      "sample_index": 291,
+      "features": [
+        0.0,
+        1.0,
+        4.0,
+        8.8,
+        2.48
+      ],
+      "feature_dict": {
+        "food_category": 0.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 8.8,
+        "current_kitchen_workload": 2.48
+      },
+      "actual_target": 8.92,
+      "python_prediction": 8.672915
+    },
+    {
+      "sample_index": 311,
+      "features": [
+        3.0,
+        1.0,
+        1.0,
+        12.56,
+        30.0
+      ],
+      "feature_dict": {
+        "food_category": 3.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 12.56,
+        "current_kitchen_workload": 30.0
+      },
+      "actual_target": 7.73,
+      "python_prediction": 8.480789
+    },
+    {
+      "sample_index": 332,
+      "features": [
+        2.0,
+        1.0,
+        4.0,
+        9.69,
+        5.93
+      ],
+      "feature_dict": {
+        "food_category": 2.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 9.69,
+        "current_kitchen_workload": 5.93
+      },
+      "actual_target": 12.41,
+      "python_prediction": 12.909778
+    },
+    {
+      "sample_index": 353,
+      "features": [
+        3.0,
+        2.0,
+        1.0,
+        18.69,
+        0.64
+      ],
+      "feature_dict": {
+        "food_category": 3.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 18.69,
+        "current_kitchen_workload": 0.64
+      },
+      "actual_target": 3.82,
+      "python_prediction": 3.832597
+    },
+    {
+      "sample_index": 374,
+      "features": [
+        2.0,
+        2.0,
+        4.0,
+        14.0,
+        4.98
+      ],
+      "feature_dict": {
+        "food_category": 2.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 14.0,
+        "current_kitchen_workload": 4.98
+      },
+      "actual_target": 16.62,
+      "python_prediction": 15.810826
+    },
+    {
+      "sample_index": 395,
+      "features": [
+        3.0,
+        1.0,
+        1.0,
+        14.24,
+        3.55
+      ],
+      "feature_dict": {
+        "food_category": 3.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 14.24,
+        "current_kitchen_workload": 3.55
+      },
+      "actual_target": 2.37,
+      "python_prediction": 2.787477
+    },
+    {
+      "sample_index": 415,
+      "features": [
+        3.0,
+        2.0,
+        2.0,
+        18.16,
+        4.64
+      ],
+      "feature_dict": {
+        "food_category": 3.0,
+        "order_quantity": 2.0,
+        "preparation_complexity": 2.0,
+        "time_of_day_hour": 18.16,
+        "current_kitchen_workload": 4.64
+      },
+      "actual_target": 7.07,
+      "python_prediction": 5.409859
+    },
+    {
+      "sample_index": 436,
+      "features": [
+        2.0,
+        1.0,
+        4.0,
+        15.16,
+        4.52
+      ],
+      "feature_dict": {
+        "food_category": 2.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 4.0,
+        "time_of_day_hour": 15.16,
+        "current_kitchen_workload": 4.52
+      },
+      "actual_target": 11.49,
+      "python_prediction": 12.768397
+    },
+    {
+      "sample_index": 457,
+      "features": [
+        4.0,
+        3.0,
+        1.0,
+        10.95,
+        0.56
+      ],
+      "feature_dict": {
+        "food_category": 4.0,
+        "order_quantity": 3.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 10.95,
+        "current_kitchen_workload": 0.56
+      },
+      "actual_target": 2.79,
+      "python_prediction": 3.825071
+    },
+    {
+      "sample_index": 478,
+      "features": [
+        0.0,
+        1.0,
+        3.0,
+        13.82,
+        8.98
+      ],
+      "feature_dict": {
+        "food_category": 0.0,
+        "order_quantity": 1.0,
+        "preparation_complexity": 3.0,
+        "time_of_day_hour": 13.82,
+        "current_kitchen_workload": 8.98
+      },
+      "actual_target": 12.04,
+      "python_prediction": 10.019401
+    },
+    {
+      "sample_index": 499,
+      "features": [
+        4.0,
+        3.0,
+        1.0,
+        10.72,
+        12.46
+      ],
+      "feature_dict": {
+        "food_category": 4.0,
+        "order_quantity": 3.0,
+        "preparation_complexity": 1.0,
+        "time_of_day_hour": 10.72,
+        "current_kitchen_workload": 12.46
+      },
+      "actual_target": 5.21,
+      "python_prediction": 5.645147
+    }
+  ]
+}

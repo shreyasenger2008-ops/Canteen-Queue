@@ -4,6 +4,7 @@
 #include "canteen/core/MenuManager.hpp"
 #include "canteen/core/CounterManager.hpp"
 #include "canteen/core/OrderManager.hpp"
+#include "canteen/ml/RandomForestPredictor.hpp"
 #include <vector>
 #include <utility>
 
@@ -19,13 +20,16 @@ private:
     MenuManager menuManager;
     CounterManager counterManager;
     OrderManager orderManager;
+    ml::RandomForestPredictor predictor;
+    double timeOfDayHour{12.5}; // Default 12:30 PM (lunch rush)
+    bool useMLPredictor{true};
 
     void seedDefaultData();
 
 public:
     CanteenSystem();
 
-    // Accessors to managers
+    // Accessors to managers & ML predictor
     MenuManager& getMenuManager() { return menuManager; }
     const MenuManager& getMenuManager() const { return menuManager; }
 
@@ -34,6 +38,16 @@ public:
 
     OrderManager& getOrderManager() { return orderManager; }
     const OrderManager& getOrderManager() const { return orderManager; }
+
+    ml::RandomForestPredictor& getPredictor() { return predictor; }
+    const ml::RandomForestPredictor& getPredictor() const { return predictor; }
+
+    // ML Configuration
+    void setTimeOfDayHour(double hour) { timeOfDayHour = hour; }
+    double getTimeOfDayHour() const { return timeOfDayHour; }
+    void setUseMLPredictor(bool enable) { useMLPredictor = enable; }
+    bool getUseMLPredictor() const { return useMLPredictor; }
+    double predictOrderPrepTime(const Order& order, int counterId = -1) const;
 
     // Core Business Workflows
     int placeOrder(const std::string& studentId, const std::string& studentName,

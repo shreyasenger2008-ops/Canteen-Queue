@@ -3,6 +3,7 @@
 
 #include "canteen/models/FoodItem.hpp"
 #include "canteen/models/OrderStatus.hpp"
+#include "canteen/ml/IPrepTimePredictor.hpp"
 #include <vector>
 #include <string>
 
@@ -61,6 +62,10 @@ public:
     void setId(int newId) { id = newId; }
     void setAssignedCounterId(int counterId) { assignedCounterId = counterId; }
     void setOrderTimestamp(long long ts) { orderTimestamp = ts; }
+    void setTotalPreparationTimeMinutes(int mins) { if (mins > 0) totalPreparationTimeMinutes = mins; }
+
+    // Feature extraction for ML inference
+    ml::OrderPredictionFeatures extractPredictionFeatures(double timeOfDayHour = 12.5, double counterWorkload = 0.0) const;
 
     // Helpers
     std::string toString() const;

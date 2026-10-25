@@ -57,4 +57,45 @@ void Order::display() const {
     }
 }
 
+ml::OrderPredictionFeatures Order::extractPredictionFeatures(double timeOfDayHour, double counterWorkload) const {
+    ml::OrderPredictionFeatures feats;
+    feats.timeOfDayHour = timeOfDayHour;
+    feats.currentKitchenWorkload = counterWorkload;
+
+    if (items.empty()) {
+        feats.foodCategory = 0;
+        feats.orderQuantity = 1;
+        feats.preparationComplexity = 2;
+        return feats;
+    }
+
+    int totalQty = 0;
+    int maxComplexity = 1;
+    int dominantCategory = items[0].item.getCategoryCode();
+    int maxQtyForCategory = 0;
+
+    // Track category quantities to pick dominant category in order
+    int categoryQuantities[5] = {0, 0, 0, 0, 0};
+
+    for (const auto& line : items) {
+        totalQty += line.quantity;
+        int cat = line.item.getCategoryCode();
+        if (cat >= 0 && cat < 5) {
+            categoryQuantities[cat] += line.quantity;
+            if (categoryQuantities[cat] > maxQtyForCategory) {
+                maxQtyForCategory = categoryQuantities[cat];
+                dominantCategory = cat;
+            }
+        }
+        if (line.item.getComplexity() > maxComplexity) {
+            maxComplexity = line.item.getComplexity();
+        }
+    }
+
+    feats.foodCategory = dominantCategory;
+    feats.orderQuantity = std::max(1, totalQty);
+    feats.preparationComplexity = std::min(5, std::max(1, maxComplexity));
+    return feats;
+}
+
 } // namespace canteen

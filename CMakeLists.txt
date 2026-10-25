@@ -17,6 +17,7 @@ set(CORE_SOURCES
     src/core/CounterManager.cpp
     src/core/OrderManager.cpp
     src/core/CanteenSystem.cpp
+    src/ml/RandomForestPredictor.cpp
 )
 
 # Core Library
@@ -39,6 +40,7 @@ set(TEST_SOURCES
     tests/test_searching.cpp
     tests/test_sorting.cpp
     tests/test_integration.cpp
+    tests/test_ml.cpp
 )
 
 add_executable(canteen_tests ${TEST_SOURCES})

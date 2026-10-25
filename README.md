@@ -1,6 +1,6 @@
-# AI-Based College Canteen Queue Optimization System (Phase 1: DSA Foundation)
+# AI-Based College Canteen Queue Optimization System
 
-An advanced C++ Data Structures & Algorithms (DSA) project engineered to optimize college canteen queues, balance kitchen workloads across counters, track complete order lifecycles, and provide an extensible core for future AI/ML predictive scheduling and graphical dashboards.
+An advanced C++ Data Structures & Algorithms (DSA) and Machine Learning project engineered to optimize college canteen queues, predict dynamic food preparation durations using a trained `RandomForestRegressor`, balance kitchen workloads across counters, and track complete order lifecycles.
 
 ---
 
@@ -20,39 +20,81 @@ All 7 core DSA topics required by the syllabus are implemented from scratch with
 
 ---
 
+## 🤖 Machine Learning Integration (Phase 2)
+
+A `RandomForestRegressor` (20 estimators, maximum depth 6) was trained using Python (`scikit-learn`, `pandas`, `numpy`) on a reproducible synthetic dataset ($N = 2,500$ samples) to predict preparation times based on:
+1. `food_category` (0: Fast Food, 1: South Indian, 2: Meals/Chinese, 3: Beverages, 4: Bakery/Snacks)
+2. `order_quantity` (1 to 5 items)
+3. `preparation_complexity` (1 to 5)
+4. `time_of_day_hour` (8.0 to 20.0 decimal hours)
+5. `current_kitchen_workload` (0 to 30 minutes pending at the evaluated counter)
+
+### Evaluation Metrics on Held-Out Test Set (500 samples)
+- **Baseline Model (Training Set Mean Predictor)**:
+  - MAE: **4.5003 minutes**
+  - RMSE: **5.5477 minutes**
+- **Trained RandomForestRegressor**:
+  - MAE: **0.8139 minutes** (81.91% reduction over baseline)
+  - RMSE: **1.0411 minutes** (81.23% reduction over baseline)
+  - $R^2$ Score: **0.9648**
+- **C++ Inference Engine**:
+  - Direct tree traversal in `RandomForestPredictor.cpp`.
+  - Zero external DLL dependencies.
+  - Matches Python predictions down to $< 10^{-6}$ error on held-out test points.
+  - Automatic fallback to compiled constants (`EmbeddedModelData.hpp`) or baseline sum if `model.json` is missing.
+
+---
+
 ## 🏗️ Architecture & Project Structure
 
 ```
 c:\SY\FODS CP FINAL\
-├── CMakeLists.txt                    # Modern CMake build configuration
-├── build.bat                         # Automated Windows build & test runner
-├── README.md                         # Project documentation and quickstart
+├── CMakeLists.txt                         # Modern CMake build configuration
+├── build.bat                              # Automated Windows build & test runner
+├── README.md                              # Project documentation and quickstart
+├── ml/                                    # Machine learning training & export pipeline
+│   ├── requirements.txt                   # scikit-learn, pandas, numpy
+│   ├── generate_dataset.py                # Synthetic dataset generator (reproducible seed 42)
+│   ├── train_model.py                     # RandomForestRegressor training script
+│   ├── evaluate_model.py                  # Evaluation vs baseline generating metrics.json
+│   ├── export_model.py                    # Exports trees to model.json & EmbeddedModelData.hpp
+│   ├── canteen_prep_data.csv              # Synthetic dataset (2,500 rows)
+│   ├── model.json                         # Serialized 20-tree Random Forest
+│   ├── metrics.json                       # Evaluated MAE, RMSE, R^2, and feature importances
+│   └── test_predictions.json             # Held-out samples for C++ vs Python cross-verification
 ├── docs/
-│   ├── algorithms.md                 # Detailed data structure & algorithm specifications
-│   ├── complexity-analysis.md        # Comprehensive time and space complexity analysis
-│   └── testing-report.md             # Verification results for all 33 unit & integration tests
+│   ├── algorithms.md                      # Data structures & predictive scheduling specifications
+│   ├── ml-model.md                        # Machine learning model documentation & metrics
+│   ├── complexity-analysis.md             # Asymptotic time and space complexity analysis
+│   └── testing-report.md                  # Verification report covering all 40 unit & integration tests
 ├── include/
 │   └── canteen/
+│       ├── ml/
+│       │   ├── IPrepTimePredictor.hpp     # Abstract prediction interface and feature vector
+│       │   └── RandomForestPredictor.hpp  # In-memory Random Forest inference engine
 │       ├── models/
-│       │   ├── FoodItem.hpp          # FoodItem model (ID, price, prep time, availability)
-│       │   ├── Order.hpp             # Order model with status lifecycle validation
-│       │   ├── OrderStatus.hpp       # State machine: QUEUED -> PREPARING -> READY -> COLLECTED
-│       │   ├── Counter.hpp           # Service counter holding its dedicated FIFO OrderQueue
-│       │   └── AdminAction.hpp       # Encapsulates administrative actions for stack undo
+│       │   ├── FoodItem.hpp               # FoodItem model (ID, price, prep time, complexity)
+│       │   ├── Order.hpp                  # Order model with status lifecycle validation
+│       │   ├── OrderStatus.hpp            # State machine: QUEUED -> PREPARING -> READY -> COLLECTED
+│       │   ├── Counter.hpp                # Service counter holding its dedicated FIFO OrderQueue
+│       │   ├── AdminAction.hpp            # Encapsulates administrative actions for stack undo
+│       │   └── EmbeddedModelData.hpp      # Auto-generated zero-dependency compiled tree fallback
 │       ├── ds/
-│       │   ├── FixedArray.hpp        # Bounds-checked fixed array implementation
-│       │   ├── SinglyLinkedList.hpp  # Memory-safe singly linked list with head/tail pointers
-│       │   ├── Queue.hpp             # FIFO Queue built on SinglyLinkedList
-│       │   └── Stack.hpp             # LIFO Stack for action audit and rollback
+│       │   ├── FixedArray.hpp             # Bounds-checked fixed array implementation
+│       │   ├── SinglyLinkedList.hpp       # Memory-safe singly linked list with head/tail pointers
+│       │   ├── Queue.hpp                  # FIFO Queue built on SinglyLinkedList
+│       │   └── Stack.hpp                  # LIFO Stack for action audit and rollback
 │       ├── algorithms/
-│       │   ├── Searching.hpp         # Linear Search and Binary Search
-│       │   └── Sorting.hpp           # In-place Bubble Sort and Divide-and-Conquer Merge Sort
+│       │   ├── Searching.hpp              # Linear Search and Binary Search
+│       │   └── Sorting.hpp                # In-place Bubble Sort and Divide-and-Conquer Merge Sort
 │       └── core/
-│           ├── MenuManager.hpp       # Catalog management, search/sort, and undo stack
-│           ├── CounterManager.hpp    # Counter workload optimization and allocation heuristic
-│           ├── OrderManager.hpp      # Order placement, audit trail, and cross-queue search
-│           └── CanteenSystem.hpp     # Unified facade and simulation coordinator
+│           ├── MenuManager.hpp            # Catalog management, search/sort, and undo stack
+│           ├── CounterManager.hpp         # Counter workload optimization and allocation heuristic
+│           ├── OrderManager.hpp           # Order placement, audit trail, and cross-queue search
+│           └── CanteenSystem.hpp          # Unified facade and simulation coordinator
 ├── src/
+│   ├── ml/
+│   │   └── RandomForestPredictor.cpp      # Fast C++ tree traversal and JSON model loader
 │   ├── models/
 │   │   ├── FoodItem.cpp
 │   │   ├── Order.cpp
@@ -62,17 +104,18 @@ c:\SY\FODS CP FINAL\
 │   │   ├── CounterManager.cpp
 │   │   ├── OrderManager.cpp
 │   │   └── CanteenSystem.cpp
-│   └── main.cpp                      # CLI entry point (supports interactive and --demo modes)
+│   └── main.cpp                           # CLI entry point (interactive CLI + `--demo` flag)
 └── tests/
-    ├── test_framework.hpp            # Lightweight standalone test runner with zero dependencies
-    ├── test_main.cpp                 # Test registry runner
-    ├── test_array.cpp                # FixedArray indexing, bounds checking, and overflow tests
-    ├── test_linked_list.cpp          # SinglyLinkedList edge cases, delete, search, Rule of 5
-    ├── test_queue.cpp                # FIFO order, enqueue/dequeue cycles, cancellation
-    ├── test_stack.cpp                # LIFO order, deep copy, admin undo verification
-    ├── test_searching.cpp            # Linear & Binary search, sortedness validation
-    ├── test_sorting.cpp              # Bubble Sort & Merge Sort (empty, sorted, reverse, duplicates)
-    └── test_integration.cpp          # End-to-end allocation, order lifecycle, workload updates
+    ├── test_framework.hpp                 # Lightweight standalone test runner
+    ├── test_main.cpp                      # Test registry runner
+    ├── test_array.cpp                     # 5 Unit tests for FixedArray
+    ├── test_linked_list.cpp               # 6 Unit tests for SinglyLinkedList
+    ├── test_queue.cpp                     # 5 Unit tests for FIFO Queue
+    ├── test_stack.cpp                     # 4 Unit tests for LIFO Stack & Undo
+    ├── test_searching.cpp                 # 4 Unit tests for Linear and Binary Search
+    ├── test_sorting.cpp                   # 5 Unit tests for Bubble Sort and Merge Sort
+    ├── test_integration.cpp               # 4 Integration tests for allocation & workload
+    └── test_ml.cpp                        # 7 Unit tests for ML inference & cross-language verification
 ```
 
 ---
@@ -84,58 +127,35 @@ c:\SY\FODS CP FINAL\
   - GCC / MinGW (g++ 7.0+)
   - Clang (clang++ 6.0+)
 - **Build System**: CMake (version 3.15 or later)
+- **Python**: Python 3.9+ with `scikit-learn`, `pandas`, `numpy` (for training pipeline)
 - **Platform**: Windows, Linux, or macOS
 
 ---
 
-## 🚀 Build Instructions
+## 🚀 Build and Run Instructions
 
-### Option 1: Quick Build via `build.bat` (Windows)
+### 1. Build and Run All Tests via `build.bat` (Windows)
 
-Simply run:
 ```cmd
 build.bat
 ```
-This automatically configures the project with CMake, compiles both `canteen_app.exe` and `canteen_tests.exe`, and executes all unit tests.
+This builds `canteen_core.lib`, `canteen_app.exe`, and `canteen_tests.exe`, and executes all 40 tests.
 
-### Option 2: Standard CMake Build
+### 2. Retraining the ML Model (Optional)
 
-```bash
-# 1. Configure the build directory
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-# 2. Build the core library, CLI application, and tests
-cmake --build build --config Release
-
-# 3. Execute the full test suite
-ctest --test-dir build --output-on-failure
-# Or run tests executable directly:
-./build/canteen_tests          # Linux / macOS
-.\build\Release\canteen_tests   # Windows (MSVC)
+```cmd
+python ml/generate_dataset.py
+python ml/train_model.py
+python ml/evaluate_model.py
+python ml/export_model.py
 ```
 
----
+### 3. Running the Live Console Application
 
-## 💻 Running the Application
-
-### 1. Interactive Console Menu
-
-Run without arguments to start the interactive management console:
 ```cmd
 .\build\Debug\canteen_app.exe
 ```
-Menu options include:
-- Viewing Menu and Counters
-- Placing sample orders with auto-allocation to the counter with minimum workload
-- Stepping through order preparation and collection
-- Cancelling pending orders
-- Searching orders and menu items (Linear and Binary Search)
-- Sorting counters and menu items (Bubble and Merge Sort)
-- Updating menu availability and performing Undo operations
-
-### 2. Automated Demonstration Simulation
-
-To run a non-interactive, automated live viva demonstration covering all 7 DSA topics sequentially:
+Or run the non-interactive automated viva demonstration:
 ```cmd
 .\build\Debug\canteen_app.exe --demo
 ```
@@ -143,8 +163,6 @@ To run a non-interactive, automated live viva demonstration covering all 7 DSA t
 ---
 
 ## 🧪 Test Results Summary
-
-The project includes 33 comprehensive unit and integration tests covering all critical boundaries, exceptional conditions, and memory safety invariants.
 
 **Command executed:**
 ```cmd
@@ -188,8 +206,15 @@ build\Debug\canteen_tests.exe
   [PASS] Integration_ValidAndInvalidStatusTransitions
   [PASS] Integration_CompleteOrderWorkflowAndWorkloadUpdate
   [PASS] Integration_CancellationReclaimsWorkloadAndClearsQueue
+  [PASS] ML_ModelLoadSuccess
+  [PASS] ML_FinitePositivePredictions
+  [PASS] ML_CompareWithPythonHeldOutPredictions
+  [PASS] ML_SafeInputValidationAndErrorHandling
+  [PASS] ML_MissingModelFileFallbackSafety
+  [PASS] ML_PredictionsReachSchedulingEngine
+  [PASS] ML_PreservesFIFOOrderingUnderPredictedAllocations
 ==============================================================================
-TEST SUMMARY: 33 PASSED, 0 FAILED (Total: 33)
+TEST SUMMARY: 40 PASSED, 0 FAILED (Total: 40)
 ALL TESTS PASSED SUCCESSFULLY!
 ==============================================================================
 ```

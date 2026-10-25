@@ -3,6 +3,7 @@
 
 #include "canteen/ds/FixedArray.hpp"
 #include "canteen/models/Counter.hpp"
+#include "canteen/ml/IPrepTimePredictor.hpp"
 #include <cstddef>
 #include <string>
 
@@ -35,11 +36,18 @@ public:
     Counter* getCounterById(int id);
     const Counter* getCounterById(int id) const;
 
-    // Baseline Counter Allocation Strategy (Smallest Workload, Tie-break on Counter ID)
-    Counter* findBestCounterForOrder(const Order& order);
+    // Counter Allocation Strategy (Predictive ML Model & Baseline Fallback)
+    Counter* findBestCounterForOrder(const Order& order,
+                                     const ml::IPrepTimePredictor* predictor = nullptr,
+                                     double timeOfDayHour = 12.5,
+                                     double* outPredictedPrepTime = nullptr);
 
     // Queue actions on counters
-    bool enqueueOrder(Order order, int preferredCounterId = -1, int* assignedCounterIdOut = nullptr);
+    bool enqueueOrder(Order order,
+                      int preferredCounterId = -1,
+                      int* assignedCounterIdOut = nullptr,
+                      const ml::IPrepTimePredictor* predictor = nullptr,
+                      double timeOfDayHour = 12.5);
     bool startPreparingFront(int counterId);
     Order completeFrontOrder(int counterId);
     bool cancelOrder(int orderId, Order& cancelledOrderOut);

@@ -40,9 +40,11 @@ Order Counter::completeFrontOrder() {
         currentWorkloadMinutes = 0;
     }
     
-    // Transition status to READY
-    if (completedOrder.getStatus() == OrderStatus::QUEUED ||
-        completedOrder.getStatus() == OrderStatus::PREPARING) {
+    // Transition status to READY (progressing through PREPARING if still QUEUED)
+    if (completedOrder.getStatus() == OrderStatus::QUEUED) {
+        completedOrder.transitionTo(OrderStatus::PREPARING);
+    }
+    if (completedOrder.getStatus() == OrderStatus::PREPARING) {
         completedOrder.transitionTo(OrderStatus::READY);
     }
     
