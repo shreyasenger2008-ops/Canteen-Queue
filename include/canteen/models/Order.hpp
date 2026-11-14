@@ -32,6 +32,7 @@ private:
     int totalPreparationTimeMinutes{0};
     double totalAmount{0.0};
     OrderStatus status{OrderStatus::QUEUED};
+    std::string paymentStatus{"PENDING"};
     int assignedCounterId{-1};
     long long orderTimestamp{0};
 
@@ -55,11 +56,14 @@ public:
     int getTotalPreparationTimeMinutes() const { return totalPreparationTimeMinutes; }
     double getTotalAmount() const { return totalAmount; }
     OrderStatus getStatus() const { return status; }
+    const std::string& getPaymentStatus() const { return paymentStatus; }
     int getAssignedCounterId() const { return assignedCounterId; }
     long long getOrderTimestamp() const { return orderTimestamp; }
 
     // Setters
     void setId(int newId) { id = newId; }
+    void setStatus(OrderStatus newStatus) { status = newStatus; }
+    void setPaymentStatus(std::string ps) { paymentStatus = std::move(ps); }
     void setAssignedCounterId(int counterId) { assignedCounterId = counterId; }
     void setOrderTimestamp(long long ts) { orderTimestamp = ts; }
     void setTotalPreparationTimeMinutes(int mins) { if (mins > 0) totalPreparationTimeMinutes = mins; }

@@ -35,6 +35,9 @@ bool Order::transitionTo(OrderStatus newStatus) {
                                     orderStatusToString(newStatus));
     }
     status = newStatus;
+    if (newStatus == OrderStatus::COLLECTED) {
+        paymentStatus = "PAID";
+    }
     return true;
 }
 

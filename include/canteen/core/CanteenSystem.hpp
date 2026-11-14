@@ -5,15 +5,17 @@
 #include "canteen/core/CounterManager.hpp"
 #include "canteen/core/OrderManager.hpp"
 #include "canteen/ml/RandomForestPredictor.hpp"
+#include "canteen/db/DatabaseManager.hpp"
 #include <vector>
 #include <utility>
+#include <string>
 
 namespace canteen {
 
 /**
  * @brief High-level facade for the AI-Based College Canteen Queue Optimization System.
- * Connects all core DSA data structures, algorithms, and models into a cohesive
- * console simulation and testing environment.
+ * Connects all core DSA data structures, algorithms, ML models, and SQLite persistence
+ * into a cohesive application and REST API backend.
  */
 class CanteenSystem {
 private:
@@ -21,15 +23,16 @@ private:
     CounterManager counterManager;
     OrderManager orderManager;
     ml::RandomForestPredictor predictor;
+    db::DatabaseManager dbManager;
     double timeOfDayHour{12.5}; // Default 12:30 PM (lunch rush)
     bool useMLPredictor{true};
 
     void seedDefaultData();
 
 public:
-    CanteenSystem();
+    explicit CanteenSystem(const std::string& dbPath = "");
 
-    // Accessors to managers & ML predictor
+    // Accessors to managers, ML predictor & database
     MenuManager& getMenuManager() { return menuManager; }
     const MenuManager& getMenuManager() const { return menuManager; }
 
@@ -42,21 +45,27 @@ public:
     ml::RandomForestPredictor& getPredictor() { return predictor; }
     const ml::RandomForestPredictor& getPredictor() const { return predictor; }
 
+    db::DatabaseManager& getDatabaseManager() { return dbManager; }
+    const db::DatabaseManager& getDatabaseManager() const { return dbManager; }
+
     // ML Configuration
     void setTimeOfDayHour(double hour) { timeOfDayHour = hour; }
     double getTimeOfDayHour() const { return timeOfDayHour; }
     void setUseMLPredictor(bool enable) { useMLPredictor = enable; }
     bool getUseMLPredictor() const { return useMLPredictor; }
+    bool isMLPredictorActive() const { return useMLPredictor && predictor.isLoaded(); }
     double predictOrderPrepTime(const Order& order, int counterId = -1) const;
 
     // Core Business Workflows
     int placeOrder(const std::string& studentId, const std::string& studentName,
                    const std::vector<std::pair<int, int>>& itemRequests,
-                   int preferredCounterId = -1);
+                   int preferredCounterId = -1,
+                   const std::string& idempotencyKey = "");
 
     bool startPreparingOrder(int counterId);
     bool completeAndCollectOrder(int counterId, Order* completedOrderOut = nullptr);
     bool cancelOrder(int orderId);
+    bool deleteOrder(int orderId);
 
     // Searching operations
     bool searchOrderById(int orderId, Order& orderOut) const;

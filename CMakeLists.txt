@@ -1,12 +1,18 @@
 cmake_minimum_required(VERSION 3.15)
-project(CanteenQueueOptimizationSystem VERSION 1.0.0 LANGUAGES CXX)
+project(CanteenQueueOptimizationSystem VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sqlite
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/httplib
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/nlohmann
+)
 
 # Core Library Sources
 set(CORE_SOURCES
@@ -18,11 +24,24 @@ set(CORE_SOURCES
     src/core/OrderManager.cpp
     src/core/CanteenSystem.cpp
     src/ml/RandomForestPredictor.cpp
+    src/db/DatabaseManager.cpp
+    src/api/HttpServer.cpp
+    third_party/sqlite/sqlite3.c
 )
 
 # Core Library
 add_library(canteen_core STATIC ${CORE_SOURCES})
-target_include_directories(canteen_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(canteen_core PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sqlite
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/httplib
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/nlohmann
+)
+
+if(WIN32)
+    target_link_libraries(canteen_core PUBLIC ws2_32 crypt32)
+endif()
 
 # Main Application Executable
 add_executable(canteen_app src/main.cpp)
@@ -41,6 +60,8 @@ set(TEST_SOURCES
     tests/test_sorting.cpp
     tests/test_integration.cpp
     tests/test_ml.cpp
+    tests/test_database.cpp
+    tests/test_api.cpp
 )
 
 add_executable(canteen_tests ${TEST_SOURCES})

@@ -6,20 +6,56 @@
 
 namespace canteen {
 
-CanteenSystem::CanteenSystem() {
+CanteenSystem::CanteenSystem(const std::string& dbPath) {
     seedDefaultData();
+    if (!dbPath.empty()) {
+        dbManager.initialize(dbPath);
+        dbManager.syncMenuItems(menuManager.getItems());
+        dbManager.syncCounters(counterManager);
+        dbManager.recoverSystemState(menuManager, counterManager, orderManager);
+    }
 }
 
 void CanteenSystem::seedDefaultData() {
-    // 1. Seed Menu Items
-    menuManager.addItem(FoodItem(101, "Veg Cheese Burger", "Fast Food", 75.0, 7, true));
-    menuManager.addItem(FoodItem(102, "Paneer Kathi Roll", "Fast Food", 90.0, 8, true));
-    menuManager.addItem(FoodItem(103, "Masala Dosa", "South Indian", 60.0, 5, true));
-    menuManager.addItem(FoodItem(104, "Veg Fried Rice", "Chinese", 110.0, 10, true));
-    menuManager.addItem(FoodItem(105, "Cold Coffee", "Beverages", 45.0, 3, true));
-    menuManager.addItem(FoodItem(106, "Masala Chai", "Beverages", 20.0, 2, true));
-    menuManager.addItem(FoodItem(107, "Chocolate Pastry", "Bakery", 50.0, 1, true));
-    menuManager.addItem(FoodItem(108, "Samosa (2 pcs)", "Snacks", 30.0, 3, true));
+    // 1. Seed Menu Items from Canteen Menu Photo
+    // Row 1
+    menuManager.addItem(FoodItem(101, "Poha", "Breakfast", 35.0, 7, true, 1));
+    menuManager.addItem(FoodItem(102, "Fruit Plate", "Snacks", 50.0, 8, true, 1));
+    menuManager.addItem(FoodItem(103, "Patties", "Snacks", 25.0, 3, true, 1));
+    menuManager.addItem(FoodItem(104, "Uttapam", "South Indian", 60.0, 8, true, 2));
+    menuManager.addItem(FoodItem(105, "Samosa", "Snacks", 20.0, 3, true, 1));
+
+    // Row 2
+    menuManager.addItem(FoodItem(106, "Medu Vada", "South Indian", 40.0, 5, true, 2));
+    menuManager.addItem(FoodItem(107, "Vada Pav", "Snacks", 20.0, 3, true, 1));
+    menuManager.addItem(FoodItem(108, "Idli Sambhar", "South Indian", 45.0, 5, true, 2));
+    menuManager.addItem(FoodItem(109, "Sabudana Vada", "Snacks", 40.0, 6, true, 2));
+    menuManager.addItem(FoodItem(110, "Sabudana Khichdi", "Snacks", 50.0, 5, true, 2));
+
+    // Row 3
+    menuManager.addItem(FoodItem(111, "Aloo Paratha", "Meals", 55.0, 8, true, 2));
+    menuManager.addItem(FoodItem(112, "Paneer Paratha", "Meals", 70.0, 8, true, 2));
+    menuManager.addItem(FoodItem(113, "Plain Dosa", "South Indian", 50.0, 6, true, 2));
+    menuManager.addItem(FoodItem(114, "Masala Dosa", "South Indian", 65.0, 7, true, 2));
+    menuManager.addItem(FoodItem(115, "Plain Sandwich", "Snacks", 40.0, 5, true, 1));
+
+    // Row 4
+    menuManager.addItem(FoodItem(116, "Paneer Sandwich", "Snacks", 65.0, 7, true, 2));
+    menuManager.addItem(FoodItem(117, "Fried Rice", "Meals", 80.0, 10, true, 2));
+    menuManager.addItem(FoodItem(118, "Kolam Rice", "Meals", 70.0, 8, true, 2));
+    menuManager.addItem(FoodItem(119, "Noodles", "Meals", 75.0, 8, true, 2));
+    menuManager.addItem(FoodItem(120, "Spicy Noodles", "Meals", 85.0, 9, true, 2));
+
+    // Row 5: Beverages & Shakes
+    menuManager.addItem(FoodItem(121, "Chikoo Shake", "Beverages", 50.0, 4, true, 1));
+    menuManager.addItem(FoodItem(122, "Mango Shake", "Beverages", 60.0, 4, true, 1));
+    menuManager.addItem(FoodItem(123, "Banana Shake", "Beverages", 45.0, 4, true, 1));
+    menuManager.addItem(FoodItem(124, "Pineapple Shake", "Beverages", 50.0, 4, true, 1));
+    menuManager.addItem(FoodItem(125, "Anjeer Shake", "Beverages", 65.0, 5, true, 2));
+    menuManager.addItem(FoodItem(126, "Strawberry Shake", "Beverages", 55.0, 4, true, 1));
+    menuManager.addItem(FoodItem(127, "Cold Coffee", "Beverages", 45.0, 3, true, 1));
+    menuManager.addItem(FoodItem(128, "Thick Cold Coffee", "Beverages", 60.0, 4, true, 2));
+    menuManager.addItem(FoodItem(129, "Butterscotch Shake", "Beverages", 55.0, 4, true, 1));
 
     // 2. Seed Fixed Counter Collection
     counterManager.addCounter(Counter(1, "Express Fast Food #1", "Fast Food & Snacks", true));
@@ -30,7 +66,8 @@ void CanteenSystem::seedDefaultData() {
 
 int CanteenSystem::placeOrder(const std::string& studentId, const std::string& studentName,
                              const std::vector<std::pair<int, int>>& itemRequests,
-                             int preferredCounterId) {
+                             int preferredCounterId,
+                             const std::string& idempotencyKey) {
     if (itemRequests.empty()) {
         std::cout << "[ERROR] Cannot place order with 0 items.\n";
         return -1;
@@ -69,6 +106,14 @@ int CanteenSystem::placeOrder(const std::string& studentId, const std::string& s
     newOrder.setAssignedCounterId(assignedCounterId);
     orderManager.recordOrderPlaced(newOrder);
 
+    // Persist to SQLite
+    if (dbManager.isOpen()) {
+        bool saved = dbManager.saveNewOrder(newOrder, idempotencyKey);
+        if (!saved) {
+            std::cout << "[ERROR] Failed to persist Order #" << orderId << " to database.\n";
+        }
+    }
+
     std::cout << "[SUCCESS] Order #" << orderId << " placed successfully for "
               << studentName << " (" << studentId << "). Assigned to Counter #"
               << assignedCounterId << " (Predicted Prep: " << newOrder.getTotalPreparationTimeMinutes()
@@ -95,6 +140,13 @@ double CanteenSystem::predictOrderPrepTime(const Order& order, int counterId) co
 bool CanteenSystem::startPreparingOrder(int counterId) {
     bool ok = counterManager.startPreparingFront(counterId);
     if (ok) {
+        Counter* c = counterManager.getCounterById(counterId);
+        if (c != nullptr && !c->getPendingQueue().isEmpty()) {
+            int frontId = c->getPendingQueue().front().getId();
+            if (dbManager.isOpen()) {
+                dbManager.updateOrderStatus(frontId, OrderStatus::PREPARING);
+            }
+        }
         std::cout << "[STATUS] Front order at Counter #" << counterId << " is now PREPARING.\n";
     } else {
         std::cout << "[WARNING] Counter #" << counterId << " has no pending orders waiting in QUEUED state.\n";
@@ -107,6 +159,10 @@ bool CanteenSystem::completeAndCollectOrder(int counterId, Order* completedOrder
         Order completed = counterManager.completeFrontOrder(counterId);
         completed.transitionTo(OrderStatus::COLLECTED);
         orderManager.recordOrderCompleted(completed);
+
+        if (dbManager.isOpen()) {
+            dbManager.updateOrderStatus(completed.getId(), OrderStatus::COLLECTED);
+        }
 
         std::cout << "[SUCCESS] Order #" << completed.getId() << " marked as READY & COLLECTED from Counter #"
                   << counterId << " by " << completed.getStudentName() << ".\n";
@@ -126,11 +182,22 @@ bool CanteenSystem::cancelOrder(int orderId) {
     bool removed = counterManager.cancelOrder(orderId, cancelledOrder);
     if (removed) {
         orderManager.recordOrderCancelled(cancelledOrder);
+        if (dbManager.isOpen()) {
+            dbManager.updateOrderStatus(orderId, OrderStatus::CANCELLED);
+        }
         std::cout << "[SUCCESS] Order #" << orderId << " has been CANCELLED and removed from queue.\n";
         return true;
     }
     std::cout << "[ERROR] Order #" << orderId << " was not found in any pending queue.\n";
     return false;
+}
+
+bool CanteenSystem::deleteOrder(int orderId) {
+    Order dummy;
+    bool removedFromQueue = counterManager.cancelOrder(orderId, dummy);
+    bool removedFromHistory = orderManager.removeOrderFromHistory(orderId);
+    bool removedFromDb = dbManager.isOpen() ? dbManager.deleteOrderById(orderId) : false;
+    return removedFromQueue || removedFromHistory || removedFromDb;
 }
 
 bool CanteenSystem::searchOrderById(int orderId, Order& orderOut) const {
@@ -158,7 +225,17 @@ void CanteenSystem::sortMenuByPrice() {
 }
 
 bool CanteenSystem::toggleItemAvailability(int itemId, bool available) {
-    return menuManager.updateItemAvailability(itemId, available);
+    bool ok = menuManager.updateItemAvailability(itemId, available);
+    if (ok && dbManager.isOpen()) {
+        dbManager.updateMenuItemAvailability(itemId, available);
+        FoodItem* it = menuManager.getItemById(itemId);
+        AdminAction act(0, ActionType::UPDATE_ITEM_AVAILABILITY, itemId,
+                        it ? it->getName() : "", !available, available, 0.0, 0.0,
+                        std::string("Toggled availability to ") + (available ? "AVAILABLE" : "OUT OF STOCK"),
+                        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        dbManager.logAdminAction(act);
+    }
+    return ok;
 }
 
 bool CanteenSystem::undoLastAdminChange(std::string& messageOut) {

@@ -104,6 +104,8 @@ struct TestAutoRegister {
     static canteen_test::TestAutoRegister reg_##name(#name, test_func_##name); \
     static void test_func_##name()
 
+#define TEST(name) TEST_CASE(name)
+
 #define ASSERT_TRUE(cond) \
     do { \
         if (!(cond)) { \

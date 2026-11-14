@@ -21,11 +21,13 @@ public:
     OrderManager() = default;
 
     int generateNextOrderId() { return nextOrderId++; }
+    void setNextOrderId(int next) { if (next > nextOrderId) nextOrderId = next; }
 
     // Order tracking
     void recordOrderPlaced(const Order& order);
     void recordOrderCompleted(const Order& order);
     void recordOrderCancelled(const Order& order);
+    bool removeOrderFromHistory(int orderId);
 
     // Linear search for an order across counters and history (DSA requirement)
     bool findOrderById(int orderId, Order& orderOut, const CounterManager& counterManager) const;

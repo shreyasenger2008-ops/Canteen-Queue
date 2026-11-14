@@ -36,6 +36,12 @@ void OrderManager::recordOrderCancelled(const Order& order) {
     }
 }
 
+bool OrderManager::removeOrderFromHistory(int orderId) {
+    return orderHistory.deleteBy([orderId](const Order& o) {
+        return o.getId() == orderId;
+    });
+}
+
 bool OrderManager::findOrderById(int orderId, Order& orderOut, const CounterManager& counterManager) const {
     // 1. First, search through active counter queues
     const auto& counters = counterManager.getCountersArray();

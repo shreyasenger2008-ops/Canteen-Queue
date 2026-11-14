@@ -9,7 +9,8 @@ namespace canteen {
 enum class ActionType {
     UPDATE_ITEM_AVAILABILITY,
     UPDATE_ITEM_PRICE,
-    UPDATE_COUNTER_AVAILABILITY
+    UPDATE_COUNTER_AVAILABILITY,
+    ORDER_ACKNOWLEDGED
 };
 
 inline std::string actionTypeToString(ActionType type) {
@@ -17,6 +18,7 @@ inline std::string actionTypeToString(ActionType type) {
         case ActionType::UPDATE_ITEM_AVAILABILITY:    return "UPDATE_ITEM_AVAILABILITY";
         case ActionType::UPDATE_ITEM_PRICE:           return "UPDATE_ITEM_PRICE";
         case ActionType::UPDATE_COUNTER_AVAILABILITY: return "UPDATE_COUNTER_AVAILABILITY";
+        case ActionType::ORDER_ACKNOWLEDGED:          return "ORDER_ACKNOWLEDGED";
         default:                                     return "UNKNOWN_ACTION";
     }
 }
@@ -32,6 +34,7 @@ inline std::ostream& operator<<(std::ostream& os, ActionType type) {
 struct AdminAction {
     int actionId{0};
     ActionType type{ActionType::UPDATE_ITEM_AVAILABILITY};
+    std::string actionType;
     int targetId{0};
     std::string targetName;
     bool prevBoolValue{false};
