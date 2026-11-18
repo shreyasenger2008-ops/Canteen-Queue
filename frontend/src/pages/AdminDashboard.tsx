@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import {
   ChefHat, CheckCircle2, PackageCheck, XCircle, Play,
-  Search, AlertCircle, Loader2, RefreshCw,
+  Search, AlertCircle, Loader2, RefreshCw, Download,
   ChevronLeft, ChevronRight, Filter, CreditCard, Check, Lock, Unlock,
   MoreVertical, Pin, PinOff, Trash2, Eye, X,
 } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
 } from '../services/api';
 import { StatusBadge, PaymentBadge } from '../components/StatusBadge';
 import { getRecentOrders, updateRecentOrderStatus } from '../utils/storage';
+import { exportOrdersToCsv } from '../utils/exportCsv';
 
 // ── Reusable action button ────────────────────────────────────────────────────
 const ActionBtn: React.FC<{
@@ -98,12 +99,12 @@ const ManageDropdown: React.FC<{
         className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-left transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         style={{
           background: 'transparent',
-          color: danger ? 'var(--pill-negative-ink)' : 'var(--text)',
+          color: danger ? (pos.isDark ? '#FC8181' : '#DC2626') : (pos.isDark ? '#EEF2FF' : '#1E293B'),
           border: 'none',
           borderRadius: '6px',
         }}
         onMouseEnter={e => {
-          if (!disabled) e.currentTarget.style.background = danger ? 'rgba(239,68,68,0.14)' : 'var(--active)';
+          if (!disabled) e.currentTarget.style.background = danger ? 'rgba(239,68,68,0.16)' : (pos.isDark ? '#263354' : '#F1F5F9');
         }}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
@@ -139,32 +140,38 @@ const ManageDropdown: React.FC<{
       {open && createPortal(
         <div
           ref={menuRef}
-          className={`${pos.isDark ? 'staff-mode ' : ''}manage-dropdown`}
+          className={pos.isDark ? 'staff-mode' : ''}
           style={{
             position: 'fixed',
             top: pos.top,
             right: pos.right,
             transform: pos.openUp ? 'translateY(-100%)' : undefined,
-            zIndex: 9999,
-            background: 'var(--raised)',
-            border: '1px solid var(--border)',
-            borderRadius: '10px',
-            boxShadow: '0 14px 36px rgba(0,0,0,0.48)',
-            padding: '5px',
-            minWidth: '188px',
-            whiteSpace: 'nowrap',
+            zIndex: 99999,
           }}
           onClick={e => e.stopPropagation()}
         >
-          {item(
-            isPinned ? 'Unpin order' : 'Pin order',
-            isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />,
-            onPin,
-          )}
-          <div style={{ height: '1px', background: 'var(--border)', margin: '2px 4px', opacity: 0.6 }} />
-          {item('View order details', <Eye className="w-3.5 h-3.5" />, onViewDetails)}
-          <div style={{ height: '1px', background: 'var(--border)', margin: '2px 4px', opacity: 0.6 }} />
-          {item('Delete order', <Trash2 className="w-3.5 h-3.5" />, onDelete, { danger: true })}
+          <div
+            className="manage-dropdown"
+            style={{
+              background: pos.isDark ? '#1E2840' : '#FFFFFF',
+              border: `1px solid ${pos.isDark ? '#2A3A5C' : '#CBD5E1'}`,
+              borderRadius: '10px',
+              boxShadow: pos.isDark ? '0 16px 40px rgba(0,0,0,0.65)' : '0 10px 25px rgba(0,0,0,0.15)',
+              padding: '5px',
+              minWidth: '188px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item(
+              isPinned ? 'Unpin order' : 'Pin order',
+              isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />,
+              onPin,
+            )}
+            <div style={{ height: '1px', background: pos.isDark ? '#2A3A5C' : '#E2E8F0', margin: '2px 4px', opacity: 0.8 }} />
+            {item('View order details', <Eye className="w-3.5 h-3.5" />, onViewDetails)}
+            <div style={{ height: '1px', background: pos.isDark ? '#2A3A5C' : '#E2E8F0', margin: '2px 4px', opacity: 0.8 }} />
+            {item('Delete order', <Trash2 className="w-3.5 h-3.5" />, onDelete, { danger: true })}
+          </div>
         </div>,
         document.body,
       )}
@@ -691,6 +698,15 @@ export const AdminDashboard: React.FC<Props> = ({ onGoStudent }) => {
               <span className="text-xs" style={{ color: 'var(--muted)' }}>Total: <strong style={{ color: 'var(--text)' }}>{totalOrders}</strong></span>
               <button onClick={() => loadOrdersTable(false)} className="p-1.5 cursor-pointer transition" style={{ color: 'var(--muted)', background: 'none', border: 'none', borderRadius: '4px' }}>
                 <RefreshCw className={`w-3.5 h-3.5 ${ordersLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => exportOrdersToCsv(orders)}
+                disabled={ordersLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition"
+                style={{ background: 'var(--raised)', color: 'var(--muted)', borderColor: 'var(--border)', borderRadius: '6px', height: '32px' }}
+              >
+                {ordersLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                Export CSV
               </button>
             </div>
           </div>

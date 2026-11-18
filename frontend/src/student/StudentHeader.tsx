@@ -85,8 +85,9 @@ export const StudentHeader: React.FC<Props> = ({
           {/* Staff link */}
           <button
             onClick={onGoStaff}
-            className="hidden sm:inline-flex text-xs cursor-pointer"
-            style={{ color: 'var(--muted)', background: 'none', border: 'none', padding: 0 }}
+            className="inline-flex items-center text-xs font-medium cursor-pointer transition hover:opacity-80"
+            style={{ color: 'var(--muted)', background: 'none', border: 'none', padding: '2px 6px' }}
+            title="Switch to Kitchen Ops / Staff Dashboard"
           >
             Staff →
           </button>
@@ -113,11 +114,11 @@ export const StudentHeader: React.FC<Props> = ({
 
       {/* Mobile nav */}
       <div className="md:hidden border-t flex" style={{ borderColor: 'var(--border)' }}>
-        {(['home', 'menu', 'track'] as StudentView[]).map(v => (
+        {(['home', 'menu', 'track', 'queues'] as StudentView[]).map(v => (
           <button
             key={v}
             onClick={() => onNav(v)}
-            className="flex-1 py-2 text-xs font-medium capitalize transition cursor-pointer"
+            className="flex-1 py-2.5 text-xs font-medium capitalize transition cursor-pointer"
             style={{
               color: view === v ? 'var(--primary)' : 'var(--muted)',
               background: 'none',
@@ -125,7 +126,7 @@ export const StudentHeader: React.FC<Props> = ({
               borderBottom: `2px solid ${view === v ? 'var(--primary)' : 'transparent'}`,
             }}
           >
-            {v === 'track' ? 'Track' : v.charAt(0).toUpperCase() + v.slice(1)}
+            {v === 'track' ? 'Track' : v === 'queues' ? 'Queues' : v.charAt(0).toUpperCase() + v.slice(1)}
           </button>
         ))}
       </div>

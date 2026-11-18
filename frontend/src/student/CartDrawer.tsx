@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { CartItem, Counter, Order } from '../types';
 import { placeOrder } from '../services/api';
 import { X, Trash2, Minus, Plus, ShoppingCart, Loader2, AlertCircle, CreditCard } from 'lucide-react';
-import { getItemImage } from './MenuSection';
+import { getItemImage } from '../utils/menuImages';
 
 interface Props {
   isOpen: boolean;

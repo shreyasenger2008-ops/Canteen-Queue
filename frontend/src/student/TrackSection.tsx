@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Order, Counter } from '../types';
 import { getOrderById, cancelOrder } from '../services/api';
 import { getRecentOrders, updateRecentOrderStatus } from '../utils/storage';
+import { useOrderReadyNotification } from '../utils/soundNotification';
 import { Search, Loader2, AlertCircle, Clock, MapPin, User, CheckCircle2, ChefHat, PackageCheck, XCircle, CreditCard } from 'lucide-react';
 
 interface Props {
@@ -28,21 +29,7 @@ export const TrackSection: React.FC<Props> = ({ initialId, counters }) => {
   const [error,       setError]       = useState<string | null>(null);
   const recents = getRecentOrders();
 
-  useEffect(() => { if (initialId) fetchOrder(initialId); }, [initialId]);
-
-  useEffect(() => {
-    if (!order || order.status === 'COLLECTED' || order.status === 'CANCELLED') return;
-    const t = setInterval(async () => {
-      try {
-        const fresh = await getOrderById(order.id);
-        setOrder(fresh);
-        updateRecentOrderStatus(fresh.id, fresh.status);
-      } catch {}
-    }, 4000);
-    return () => clearInterval(t);
-  }, [order?.id, order?.status]);
-
-  const fetchOrder = async (id?: number) => {
+  const fetchOrder = useCallback(async (id?: number) => {
     const target = id ?? Number(searchId.trim());
     if (!target || isNaN(target)) { setError('Enter a valid Order ID.'); return; }
     setLoading(true); setError(null);
@@ -56,7 +43,26 @@ export const TrackSection: React.FC<Props> = ({ initialId, counters }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchId]);
+
+  useEffect(() => {
+    if (initialId) fetchOrder(initialId);
+  }, [initialId, fetchOrder]);
+
+  const orderId = order?.id;
+  const orderStatus = order?.status;
+
+  useEffect(() => {
+    if (!orderId || orderStatus === 'COLLECTED' || orderStatus === 'CANCELLED') return;
+    const t = setInterval(async () => {
+      try {
+        const fresh = await getOrderById(orderId);
+        setOrder(fresh);
+        updateRecentOrderStatus(fresh.id, fresh.status);
+      } catch {}
+    }, 4000);
+    return () => clearInterval(t);
+  }, [orderId, orderStatus]);
 
   const doCancel = async () => {
     if (!order) return;
@@ -66,9 +72,14 @@ export const TrackSection: React.FC<Props> = ({ initialId, counters }) => {
     finally { setCancelling(false); }
   };
 
+  const { requestPermission } = useOrderReadyNotification(order?.status);
+
   const stepIdx    = order ? (STATUS_IDX[order.status] ?? 0) : -1;
   const counter    = order ? counters.find(c => c.id === order.assigned_counter_id) : null;
   const isCancelled = order?.status === 'CANCELLED';
+
+  const isActive = order !== null && !['COLLECTED', 'CANCELLED'].includes(order.status ?? '');
+  const notifPermission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
 
   return (
     <section className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-6">
@@ -209,6 +220,22 @@ export const TrackSection: React.FC<Props> = ({ initialId, counters }) => {
                   <p className="text-xs" style={{ color: 'var(--pill-negative-ink)', opacity: 0.8 }}>Removed from the queue.</p>
                 </div>
               </div>
+            )}
+
+            {/* Sound alert opt-in */}
+            {isActive && notifPermission !== 'granted' && (
+              <button
+                onClick={requestPermission}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border transition cursor-pointer"
+                style={{
+                  background: 'var(--raised)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--muted)',
+                  borderRadius: '8px',
+                }}
+              >
+                🔔 Enable sound alerts
+              </button>
             )}
 
             {/* Items */}

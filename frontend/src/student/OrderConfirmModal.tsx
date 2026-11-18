@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Order, Counter } from '../types';
-import { CheckCircle2, MapPin, Clock, X, ArrowRight, CreditCard } from 'lucide-react';
+import { CheckCircle2, MapPin, Clock, X, ArrowRight, CreditCard, Copy, Check } from 'lucide-react';
 
 interface Props {
   order: Order;
@@ -10,7 +10,14 @@ interface Props {
 }
 
 export const OrderConfirmModal: React.FC<Props> = ({ order, counters, onClose, onTrack }) => {
+  const [copied, setCopied] = useState(false);
   const counter = counters.find(c => c.id === order.assigned_counter_id);
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(String(order.id));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
@@ -48,7 +55,23 @@ export const OrderConfirmModal: React.FC<Props> = ({ order, counters, onClose, o
             style={{ background: 'var(--raised)', borderColor: 'var(--border)', borderRadius: '12px' }}
           >
             <span className="text-sm" style={{ color: 'var(--muted)' }}>Order ID</span>
-            <span className="font-bold text-base num" style={{ color: 'var(--text)' }}>#{order.id}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base num" style={{ color: 'var(--text)' }}>#{order.id}</span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                title="Copy Order ID"
+                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded cursor-pointer transition"
+                style={{
+                  background: copied ? 'var(--pill-positive-bg)' : 'var(--surface)',
+                  color: copied ? 'var(--pill-positive-ink)' : 'var(--muted)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                <span>{copied ? 'Copied!' : 'Copy'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

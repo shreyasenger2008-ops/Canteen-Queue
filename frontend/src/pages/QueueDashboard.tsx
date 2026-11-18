@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Clock, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import type { Counter, AnalyticsData, HealthStatus } from '../types';
 import { getCounters, getAnalytics } from '../services/api';
@@ -13,9 +13,9 @@ export const QueueDashboard: React.FC<Props> = ({ health }) => {
   const [loading,      setLoading]      = useState<boolean>(true);
   const [error,        setError]        = useState<string | null>(null);
   const [autoRefresh,  setAutoRefresh]  = useState<boolean>(true);
-  const [lastUpdated,  setLastUpdated]  = useState<Date>(new Date());
+  const [lastUpdated,  setLastUpdated]  = useState<Date>(() => new Date());
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setError(null);
       const [countersData, analyticsData] = await Promise.all([getCounters(), getAnalytics()]);
@@ -27,15 +27,17 @@ export const QueueDashboard: React.FC<Props> = ({ health }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(fetchData, 4000);
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh, fetchData]);
 
   const getWorkloadLabel = (w: number) => {
     if (w === 0)  return { label: 'Idle',        pillBg: 'var(--raised)',            pillInk: 'var(--muted)'             };
@@ -114,15 +116,46 @@ export const QueueDashboard: React.FC<Props> = ({ health }) => {
       {counters.length > 0 && (
         <div>
           <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text)' }}>Counters ({counters.length})</h2>
+
+          {/* Heatmap legend */}
+          <div className="flex flex-wrap items-center gap-4 mb-4 text-xs" style={{ color: 'var(--muted)' }}>
+            {[
+              { label: 'Idle',              color: '#A3A3A3' },
+              { label: 'Low (<10m)',        color: '#22C55E' },
+              { label: 'Moderate (10-20m)', color: '#F59E0B' },
+              { label: 'High (>20m)',       color: '#EF4444' },
+            ].map(item => (
+              <span key={item.label} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: item.color }} />
+                {item.label}
+              </span>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {counters.map(counter => {
               const wl = getWorkloadLabel(counter.current_workload_minutes);
-              const maxWorkload = Math.max(...counters.map(c => c.current_workload_minutes), 1);
-              const barWidth = counter.current_workload_minutes > 0
-                ? Math.min(100, (counter.current_workload_minutes / maxWorkload) * 88) : 0;
+              const isOverloaded = counter.current_workload_minutes >= 25;
+
+              // Heatmap bar: 0-30min clamped to 100%
+              const MAX_MINUTES = 30;
+              const heatPct = Math.min(100, (counter.current_workload_minutes / MAX_MINUTES) * 100);
+              const heatColor =
+                counter.current_workload_minutes === 0 ? '#A3A3A3' :
+                counter.current_workload_minutes <= 10  ? '#22C55E' :
+                counter.current_workload_minutes <= 20  ? '#F59E0B' : '#EF4444';
 
               return (
-                <div key={counter.id} className="border p-5" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '16px' }}>
+                <div
+                  key={counter.id}
+                  className="border p-5"
+                  style={{
+                    background: 'var(--surface)',
+                    borderColor: isOverloaded ? 'rgba(239,68,68,0.4)' : 'var(--border)',
+                    borderRadius: '16px',
+                    ...(isOverloaded ? { animation: 'heatPulse 2s ease-in-out infinite' } : {}),
+                  }}
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{counter.name}</div>
@@ -131,14 +164,31 @@ export const QueueDashboard: React.FC<Props> = ({ health }) => {
                     <span className="text-[11px] font-medium px-2 py-0.5" style={{ background: wl.pillBg, color: wl.pillInk, borderRadius: '4px' }}>{wl.label}</span>
                   </div>
 
-                  {/* Workload bar */}
-                  <div className="mb-4">
-                    <div className="h-1.5 rounded-full" style={{ background: 'var(--raised)' }}>
-                      <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${barWidth}%`, background: 'var(--primary)' }} />
+                  {/* Heatmap workload bar */}
+                  <div className="mb-3">
+                    <div
+                      className="w-full"
+                      style={{ height: '6px', borderRadius: '999px', background: 'rgba(0,0,0,0.08)', overflow: 'hidden' }}
+                    >
+                      <div
+                        style={{
+                          height: '6px',
+                          borderRadius: '999px',
+                          width: `${heatPct}%`,
+                          background: heatColor,
+                          transition: 'width 0.6s cubic-bezier(.4,0,0.2,1)',
+                        }}
+                      />
                     </div>
-                    <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--faint)' }}>
-                      <span>{counter.current_workload_minutes}m workload</span>
-                      <span>{counter.pending_orders_count} in queue</span>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-[11px]" style={{ color: 'var(--faint)' }}>
+                        {counter.current_workload_minutes > 0
+                          ? `~${counter.current_workload_minutes}m wait`
+                          : 'No wait'}
+                      </span>
+                      <span className="text-[11px]" style={{ color: 'var(--faint)' }}>
+                        {counter.pending_orders_count} in queue
+                      </span>
                     </div>
                   </div>
 

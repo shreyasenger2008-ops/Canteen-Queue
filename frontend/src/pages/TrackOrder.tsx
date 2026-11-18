@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   Clock,
@@ -19,6 +19,7 @@ import type { Order, Counter, RecentOrderMeta } from '../types';
 import { getOrderById, cancelOrder } from '../services/api';
 import { StatusBadge, PaymentBadge } from '../components/StatusBadge';
 import { getRecentOrders, updateRecentOrderStatus } from '../utils/storage';
+import { useOrderReadyNotification } from '../utils/soundNotification';
 
 interface Props {
   initialOrderId?: number | null;
@@ -33,37 +34,14 @@ export const TrackOrder: React.FC<Props> = ({ initialOrderId, counters }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [cancelling, setCancelling] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [recentOrders, setRecentOrders] = useState<RecentOrderMeta[]>([]);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [recentOrders, setRecentOrders] = useState<RecentOrderMeta[]>(() => getRecentOrders());
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(() => new Date());
 
-  useEffect(() => {
-    setRecentOrders(getRecentOrders());
-    if (initialOrderId) {
-      handleSearch(initialOrderId);
-    }
-  }, [initialOrderId]);
+  const { requestPermission } = useOrderReadyNotification(order?.status);
+  const isActive = order !== null && !['COLLECTED', 'CANCELLED'].includes(order?.status ?? '');
+  const notifPermission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
 
-  // Real-time polling: Every 4 seconds, if an order is active, refresh its status from backend
-  useEffect(() => {
-    if (!order || order.status === 'COLLECTED' || order.status === 'CANCELLED') {
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        const fresh = await getOrderById(order.id);
-        setOrder(fresh);
-        updateRecentOrderStatus(fresh.id, fresh.status);
-        setLastRefreshed(new Date());
-      } catch (err) {
-        // Silently skip poll failure
-      }
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [order?.id, order?.status]);
-
-  const handleSearch = async (idToSearch?: number) => {
+  const handleSearch = useCallback(async (idToSearch?: number) => {
     const targetId = idToSearch || Number(searchId.trim());
     if (!targetId || isNaN(targetId)) {
       setError('Please enter a valid numeric Order ID (e.g. 101).');
@@ -85,7 +63,36 @@ export const TrackOrder: React.FC<Props> = ({ initialOrderId, counters }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchId]);
+
+  useEffect(() => {
+    if (initialOrderId) {
+      handleSearch(initialOrderId);
+    }
+  }, [initialOrderId, handleSearch]);
+
+  const orderId = order?.id;
+  const orderStatus = order?.status;
+
+  // Real-time polling: Every 4 seconds, if an order is active, refresh its status from backend
+  useEffect(() => {
+    if (!orderId || orderStatus === 'COLLECTED' || orderStatus === 'CANCELLED') {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await getOrderById(orderId);
+        setOrder(fresh);
+        updateRecentOrderStatus(fresh.id, fresh.status);
+        setLastRefreshed(new Date());
+      } catch {
+        // Silently skip poll failure
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [orderId, orderStatus]);
 
   const handleCancelOrder = async () => {
     if (!order) return;
@@ -334,6 +341,17 @@ export const TrackOrder: React.FC<Props> = ({ initialOrderId, counters }) => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Sound alert opt-in */}
+            {isActive && notifPermission !== 'granted' && (
+              <button
+                type="button"
+                onClick={requestPermission}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E9DED1] bg-[#F8F1E8] hover:bg-[#E9DED1] text-[#81746A] text-xs font-medium transition cursor-pointer"
+              >
+                🔔 Enable sound alerts
+              </button>
             )}
 
             {/* Quick Operational Telemetry Summary Grid */}

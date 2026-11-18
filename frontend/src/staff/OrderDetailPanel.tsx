@@ -5,7 +5,7 @@ import {
   CreditCard, CheckCheck, Loader2, AlertCircle,
   Clock, MapPin, User, ShoppingBag,
 } from 'lucide-react';
-import { getItemImage } from '../student/MenuSection';
+import { getItemImage } from '../utils/menuImages';
 
 interface Props {
   order: Order | null;
